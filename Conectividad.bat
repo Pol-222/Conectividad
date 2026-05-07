@@ -1,143 +1,118 @@
-# Conectividad
-
 @echo off
 title Diagnostico de Conectividad - %computername%
 setlocal enabledelayedexpansion
 
-:: Carpeta de logs en Escritorio
+:LOG_SETUP
 set LOGFOLDER=%USERPROFILE%\Desktop\NetworkLogs
 if not exist "%LOGFOLDER%" mkdir "%LOGFOLDER%"
 
 :menu
 cls
+echo ================================
 echo  DIAGNOSTICO DE CONECTIVIDAD
-
-echo 1. ipconfig /all (mostrar IPv4)
-echo 2. Mostrar Direccion IPv4 de la placa (primer adaptador activo)
-echo 3. ping 127.0.0.1 (localhost)
-echo 4. ping google.com (4 paquetes)
-echo 5. ping personalizado
-echo 6. ping www.inet.edu.ar (4 paquetes)
-echo 7. tracert personalizado
-echo 8. nslookup dominio
-echo 9. pathping dominio
-echo a. Ejecutar pruebas 1,3,4,6 y guardar log
-echo x. Salir
+echo ================================
+echo 1. Verificacion de Bucle Local (ping 127.0.0.1)
+echo 2. Obtener IP de la placa (ipconfig)
+echo 3. Prueba de Conectividad Estandar (ping a URL - 4 paquetes)
+echo 4. Monitoreo Continuo (ping -t)
+echo 5. Definir Cantidad de Paquetes (ping -n 10)
+echo 6. Prueba de Carga (ping -l 1000)
+echo 7. Resolucion de Nombres desde IP (ping -a)
+echo s. Salir
 echo.
 set /p opt=Elija una opcion:
 
-if "%opt%"=="1" goto ipconfig
-if "%opt%"=="2" goto show_ipv4
-if "%opt%"=="3" goto ping_localhost
-if "%opt%"=="4" goto ping_google
-if "%opt%"=="5" goto ping_custom
-if "%opt%"=="6" goto ping_inet
-if "%opt%"=="7" goto tracert_custom
-if "%opt%"=="8" goto nslookup_custom
-if "%opt%"=="9" goto pathping_custom
-if /i "%opt%"=="a" goto run_and_save
-if /i "%opt%"=="x" goto end
+if "%opt%"=="1" goto loopback
+if "%opt%"=="2" goto obtener_ip
+if "%opt%"=="3" goto prueba_estandar
+if "%opt%"=="4" goto ping_continuo
+if "%opt%"=="5" goto ping_10
+if "%opt%"=="6" goto ping_carga
+if "%opt%"=="7" goto resolucion_inversa
+if /i "%opt%"=="s" goto end
 goto menu
 
-:ipconfig
+:loopback
 cls
-echo Ejecutando ipconfig /all...
-ipconfig /all
+echo Opcion 1: Verificacion de Bucle Local
+echo Ejecutando: ping 127.0.0.1 -n 4
+ping 127.0.0.1 -n 4 -w 1000
+echo.
+echo Observa: paquetes enviados/recibidos/perdidos y latencias.
 pause
 goto menu
 
-:show_ipv4
+:obtener_ip
 cls
-echo Buscando Direccion IPv4 del primer adaptador con IPv4...
+echo Opcion 2: Obtener IP de la placa (ipconfig)
+echo Mostrando adaptadores y Direccion IPv4...
+ipconfig
+echo.
+echo Extrayendo la primera Direccion IPv4 encontrada...
 for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /R /C:"IPv4 Address" /C:"Direcci.n IPv4"') do (
   set ipline=%%A
-  goto :printip
+  goto :print_ip
 )
-:printip
+:print_ip
 if defined ipline (
   set ipline=%ipline: =%
-  echo Direccion IPv4 encontrada: %ipline%
+  echo Direccion IPv4: %ipline%
 ) else (
-  echo No se encontro una Direccion IPv4 en la salida de ipconfig.
+  echo No se encontro Direccion IPv4.
 )
 pause
 goto menu
 
-:ping_localhost
+:prueba_estandar
 cls
-echo PING a 127.0.0.1 (localhost) - 4 paquetes...
-ping 127.0.0.1 -n 4 -w 1000
+echo Opcion 3: Prueba de Conectividad Estandar
+set /p target=Ingrese URL o dominio (ej: www.inet.edu.ar):
+if "%target%"=="" goto menu
+echo Ejecutando: ping %target% -n 4
+ping "%target%" -n 4 -w 1000
 pause
 goto menu
 
-:ping_google
+:ping_continuo
 cls
-echo PING a google.com - 4 paquetes...
-ping google.com -n 4 -w 1000
+echo Opcion 4: Monitoreo Continuo (ping -t)
+set /p target=Ingrese URL o direccion IP para ping continuo (Ctrl+C para detener):
+if "%target%"=="" goto menu
+echo Iniciando ping continuo a %target% (presione Ctrl+C para detener)...
+ping "%target%" -t
+echo Ping continuo detenido.
 pause
 goto menu
 
-:ping_custom
-set /p target=Ingrese direccion o dominio a pingear:
-ping %target% -n 4 -w 1000
-pause
-goto menu
-
-:ping_inet
+:ping_10
 cls
-echo PING a www.inet.edu.ar - 4 paquetes...
-ping www.inet.edu.ar -n 4 -w 1000
+echo Opcion 5: Enviar exactamente 10 paquetes (ping -n 10)
+set /p target=Ingrese URL o direccion IP:
+if "%target%"=="" goto menu
+echo Ejecutando: ping %target% -n 10
+ping "%target%" -n 10 -w 1000
 pause
 goto menu
 
-:tracert_custom
-set /p target=Ingrese direccion o dominio para tracert:
-tracert %target%
+:ping_carga
+cls
+echo Opcion 6: Prueba de Carga (paquetes de 1000 bytes)
+set /p target=Ingrese URL o direccion IP:
+if "%target%"=="" goto menu
+echo Ejecutando: ping %target% -n 4 -l 1000
+ping "%target%" -n 4 -l 1000 -w 2000
+echo Nota: algunos routers o destinos pueden bloquear paquetes grandes o ICMP.
 pause
 goto menu
 
-:nslookup_custom
-set /p target=Ingrese dominio para nslookup:
-nslookup %target%
-pause
-goto menu
-
-:pathping_custom
-set /p target=Ingrese dominio para pathping:
-echo Pathping puede tardar varios minutos...
-pathping %target%
-pause
-goto menu
-
-:run_and_save
-set timestamp=%date:~-4%%date:~3,2%%date:~0,2%_%time:~0,2%%time:~3,2%%time:~6,2%
-set logfile=%LOGFOLDER%\netdiag_%timestamp%.txt
-echo Guardando resultados en %logfile%
-(
-echo ===== IPCONFIG =====
-ipconfig /all
-echo.
-echo ===== IPV4 (primer adaptador) =====
-for /f "tokens=2 delims=:" %%A in ('ipconfig ^| findstr /R /C:"IPv4 Address" /C:"Direcci.n IPv4"') do (
-  set ipline=%%A
-  echo %%A
-  goto :skipfor
-)
-:skipfor
-echo.
-echo ===== PING 127.0.0.1 =====
-ping 127.0.0.1 -n 4 -w 1000
-echo.
-echo ===== PING google.com =====
-ping google.com -n 4 -w 1000
-echo.
-echo ===== PING www.inet.edu.ar =====
-ping www.inet.edu.ar -n 4 -w 1000
-echo.
-echo ===== TRACERT google.com (primeros saltos) =====
-tracert -h 10 google.com
-) > "%logfile%"
-echo Listo. Archivo creado: %logfile%
+:resolucion_inversa
+cls
+echo Opcion 7: Resolucion de Nombres desde IP (ping -a)
+set /p ipaddr=Ingrese direccion IP (ej: 8.8.8.8):
+if "%ipaddr%"=="" goto menu
+echo Ejecutando: ping -a %ipaddr% -n 1
+ping -a "%ipaddr%" -n 1 -w 1000
+echo Si el nombre no aparece, puede que no exista un PTR (registro inverso) o el host no responda a ICMP.
 pause
 goto menu
 
