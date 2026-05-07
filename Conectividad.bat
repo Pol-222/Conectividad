@@ -10,9 +10,8 @@ if not exist "%LOGFOLDER%" mkdir "%LOGFOLDER%"
 
 :menu
 cls
-echo ===========================
 echo  DIAGNOSTICO DE CONECTIVIDAD
-echo ===========================
+
 echo 1. ipconfig /all (mostrar IPv4)
 echo 2. Mostrar Direccion IPv4 de la placa (primer adaptador activo)
 echo 3. ping 127.0.0.1 (localhost)
